@@ -1,51 +1,62 @@
 const express = require('express');
 const WebSocket = require('ws');
 const path = require('path');
-
+const http = require('http');
+ 
 const app = express();
 const PORT = 8080;
-
+ 
+// Define a pasta de arquivos estáticos (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
-
+ 
+// Endpoint para a página principal
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-const server = app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+ 
+// Cria o servidor HTTP
+const server = http.createServer(app);
+server.listen(PORT, () => {
+  console.log(`Servidor rodando em http://<seu-ip-ou-ddns>:${PORT}`);
 });
-
+ 
+// Cria o servidor WebSocket vinculado ao servidor HTTP
 const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-  console.log('Novo cliente conectado');
-
-  // Ping para evitar timeout
-  const pingInterval = setInterval(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.ping();
-    }
-  }, 30000); // A cada 30 segundos
-
-  ws.on('message', (message) => {
-    console.log(`Mensagem recebida: ${message}`);
-    if (message === "ping") {
-      ws.send("pong");
-    }
+ 
+// Função para enviar requisição HTTP para o Arduino
+function sendCommandToArduino(command) {
+  const options = {
+    hostname: '10.197.12.226', // IP do Arduino
+    port: 80,
+    path: `/led/${command}`,   // Ex.: /led/on ou /led/off
+    method: 'GET'
+  };
+ 
+  const req = http.request(options, res => {
+    console.log(`Resposta do Arduino: ${res.statusCode}`);
+    res.on('data', d => {
+      process.stdout.write(d);
+    });
   });
-
+ 
+  req.on('error', error => {
+    console.error('Erro ao enviar comando para o Arduino:', error);
+  });
+ 
+  req.end();
+}
+ 
+// Trata conexões WebSocket
+wss.on('connection', (ws) => {
+  console.log('Novo cliente conectado via WebSocket');
+ 
+  ws.on('message', (message) => {
+    console.log(`Mensagem recebida via WebSocket: ${message}`);
+    // Envia comando ao Arduino via HTTP
+    sendCommandToArduino(message);
+  });
+ 
   ws.on('close', () => {
     console.log('Cliente desconectado');
-    clearInterval(pingInterval);
   });
 });
-
-function broadcast(command) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(command);
-    }
-  });
-}
-
-module.exports = { broadcast };
