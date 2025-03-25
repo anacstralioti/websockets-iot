@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de LED Arduino</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Controle de LED Arduino</h1>
+    <button id="onBtn">Ligar LED</button>
+    <button id="offBtn">Desligar LED</button>
+    <div id="status">Status: Desconectado</div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const onBtn = document.getElementById('onBtn');
+        const offBtn = document.getElementById('offBtn');
+        
+        const ws = new WebSocket(`ws://${window.location.hostname}:8080`);
+        
+        ws.onopen = () => {
+            statusDiv.textContent = 'Status: Conectado';
+            console.log('Conectado ao servidor WebSocket');
+        };
+        
+        ws.onclose = () => {
+            statusDiv.textContent = 'Status: Desconectado';
+            console.log('Desconectado do servidor WebSocket');
+        };
+        
+        ws.onerror = (error) => {
+            console.error('Erro no WebSocket:', error);
+        };
+        
+        ws.onmessage = (event) => {
+            console.log('Mensagem do servidor:', event.data);
+            statusDiv.textContent = `Status: ${event.data}`;
+        };
+        
+        onBtn.addEventListener('click', () => {
+            ws.send('on');
+        });
+        
+        offBtn.addEventListener('click', () => {
+            ws.send('off');
+        });
+    </script>
+</body>
+</html>
