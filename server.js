@@ -26,7 +26,7 @@ const wss = new WebSocket.Server({ server });
 // Função para enviar requisição HTTP para o Arduino
 function sendCommandToArduino(command) {
   const options = {
-    hostname: '10.197.12.227', // IP do Arduino
+    hostname: '192.168.1.100', // IP do Arduino
     port: 80,
     path: `/led/${command}`,   // Ex.: /led/on ou /led/off
     method: 'GET'
