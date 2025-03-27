@@ -1,6 +1,13 @@
 {
+  "name": "led-iot",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "express": "^4.21.2",
+    "mqtt": "^5.10.4",
     "ws": "^8.18.1"
   }
 }
