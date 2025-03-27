@@ -4,7 +4,7 @@ const path = require('path');
 const http = require('http');
  
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
  
 // Define a pasta de arquivos estáticos (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 // Cria o servidor HTTP
 const server = http.createServer(app);
 server.listen(PORT, () => {
-  console.log(`Servidor rodando em http://<seu-ip-ou-ddns>:${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
  
 // Cria o servidor WebSocket vinculado ao servidor HTTP
@@ -28,7 +28,7 @@ function sendCommandToArduino(command) {
   const options = {
     hostname: '192.168.1.100', // IP do Arduino
     port: 80,
-    path: `/led/${command}`,   // Ex.: /led/on ou /led/off
+    path: `/led/${command}`,
     method: 'GET'
   };
  

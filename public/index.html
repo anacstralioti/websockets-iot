@@ -22,7 +22,7 @@
     const offBtn = document.getElementById('offBtn');
  
     // Cria a conexão WebSocket com o servidor Node.js
-    const ws = new WebSocket(`ws://${window.location.hostname}:8080`);
+    const ws = new WebSocket(`wss://${window.location.host}`);
  
     ws.onopen = () => {
       statusDiv.textContent = 'Status: Conectado';
