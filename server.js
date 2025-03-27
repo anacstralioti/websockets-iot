@@ -1,25 +1,62 @@
 const express = require('express');
-const mqtt = require('mqtt');
+const WebSocket = require('ws');
+const path = require('path');
+const http = require('http');
+ 
 const app = express();
-const PORT = process.env.PORT || 8080;
-
-// Configuração MQTT
-const mqttClient = mqtt.connect('mqtt://broker.hivemq.com');
-const mqttTopic = 'casa/led';
-
-mqttClient.on('connect', () => {
-  console.log('Conectado ao broker MQTT');
+const PORT = 8080;
+ 
+// Define a pasta de arquivos estáticos (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public')));
+ 
+// Endpoint para a página principal
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-app.use(express.static('public'));
-
-// Rota para controlar o LED via MQTT
-app.get('/led/:command', (req, res) => {
-  const command = req.params.command;
-  mqttClient.publish(mqttTopic, command);
-  res.send(`Comando "${command}" enviado ao Arduino!`);
+ 
+// Cria o servidor HTTP
+const server = http.createServer(app);
+server.listen(PORT, () => {
+  console.log(`Servidor rodando em http://<seu-ip-ou-ddns>:${PORT}`);
 });
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+ 
+// Cria o servidor WebSocket vinculado ao servidor HTTP
+const wss = new WebSocket.Server({ server });
+ 
+// Função para enviar requisição HTTP para o Arduino
+function sendCommandToArduino(command) {
+  const options = {
+    hostname: '10.197.12.227', // IP do Arduino
+    port: 80,
+    path: `/led/${command}`,   // Ex.: /led/on ou /led/off
+    method: 'GET'
+  };
+ 
+  const req = http.request(options, res => {
+    console.log(`Resposta do Arduino: ${res.statusCode}`);
+    res.on('data', d => {
+      process.stdout.write(d);
+    });
+  });
+ 
+  req.on('error', error => {
+    console.error('Erro ao enviar comando para o Arduino:', error);
+  });
+ 
+  req.end();
+}
+ 
+// Trata conexões WebSocket
+wss.on('connection', (ws) => {
+  console.log('Novo cliente conectado via WebSocket');
+ 
+  ws.on('message', (message) => {
+    console.log(`Mensagem recebida via WebSocket: ${message}`);
+    // Envia comando ao Arduino via HTTP
+    sendCommandToArduino(message);
+  });
+ 
+  ws.on('close', () => {
+    console.log('Cliente desconectado');
+  });
 });
